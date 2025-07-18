@@ -1,0 +1,7 @@
+metadata_extraction: |
+  다음 텍스트에서 참석자, 역할(예: 고객사 담당자), 고객사 이름을 JSON으로 추출:
+  {text}
+  출력 형식: {'participants': [], 'roles': {}, 'customer_company': null}
+summary: |
+  다음 회의록에서 김영철씨가 고객사 담당자로 언급된 내용을 요약해줘:
+  {text}
