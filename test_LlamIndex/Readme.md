@@ -314,3 +314,16 @@ print(response)  # 예: "김영철씨는 ABC Corp 담당자로, 2025년 6월 10�
    - 예: "김영철씨는 ABC Corp 담당자로, 2025년 6월 10일 회의에서 프로젝트 일정 논의."
 
 ---
+
+---
+### 9. **구체적 워크플로우**
+#### Meeting Notes RAG System
+LlamaIndex를 사용한 회의록 검색 및 요약 시스템.
+
+####실행 방법
+1. config/config.yaml에 API 설정 입력.
+2. python scripts/preprocess.py
+3. python scripts/extract_metadata.py
+4. python scripts/index.py
+5. python scripts/query.py
+---
