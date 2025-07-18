@@ -6,6 +6,30 @@
 - **벡터DB**: LlamaIndex가 지원하는 벡터DB (예: FAISS, Weaviate, Chroma 등) 중 하나 선택.
 - **제약**: 메타데이터를 수동으로 생성하지 않고 자동화.
 
+project_root/
+├── config/
+│   ├── config.yaml          # 설정 파일 (API 키, 엔드포인트, 벡터DB 설정 등)
+│   └── prompts.yaml         # LLM 프롬프트 템플릿 (메타데이터 추출, 요약 등)
+├── data/
+│   ├── raw/                # 원본 회의록 파일 (PDF, Word, 텍스트)
+│   ├── processed/          # 전처리된 텍스트 파일 (옵션)
+│   └── metadata/           # 추출된 메타데이터 JSON 파일
+├── scripts/
+│   ├── preprocess.py       # 문서 로드 및 전처리 스크립트
+│   ├── extract_metadata.py # 메타데이터 추출 (LLM/NER)
+│   ├── index.py            # 벡터DB 인덱싱
+│   ├── query.py            # 검색 및 요약 쿼리 실행
+│   └── utils.py            # 공통 유틸리티 함수 (텍스트 정규화, 캐싱 등)
+├── vector_store/
+│   ├── faiss_index/        # FAISS 벡터 인덱스 저장
+│   └── cache/              # 검색 결과 캐싱 (예: Redis 또는 로컬 JSON)
+├── logs/
+│   ├── processing.log      # 문서 처리 로그
+│   └── query.log           # 쿼리 및 검색 로그
+├── requirements.txt         # Python 종속성
+└── README.md               # 프로젝트 설명 및 실행 방법
+
+
 ### 2. **LlamaIndex 설정 및 OpenAI-like API 통합**
 LlamaIndex에서 회사 서버의 OpenAI-like API를 사용하려면, `OpenAILike` 설정을 통해 커스텀 엔드포인트를 지정합니다.
 
