@@ -6,7 +6,8 @@
 - **벡터DB**: LlamaIndex가 지원하는 벡터DB (예: FAISS, Weaviate, Chroma 등) 중 하나 선택.
 - **제약**: 메타데이터를 수동으로 생성하지 않고 자동화.
 
-'''
+### 1.1 **구현 환경 가정**
+```
 project_root/
 ├── config/
 │   ├── config.yaml          # 설정 파일 (API 키, 엔드포인트, 벡터DB 설정 등)
@@ -29,7 +30,7 @@ project_root/
 │   └── query.log           # 쿼리 및 검색 로그
 ├── requirements.txt         # Python 종속성
 └── README.md               # 프로젝트 설명 및 실행 방법
-'''
+```
 
 ### 2. **LlamaIndex 설정 및 OpenAI-like API 통합**
 LlamaIndex에서 회사 서버의 OpenAI-like API를 사용하려면, `OpenAILike` 설정을 통해 커스텀 엔드포인트를 지정합니다.
