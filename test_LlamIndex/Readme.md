@@ -316,10 +316,7 @@ print(response)  # 예: "김영철씨는 ABC Corp 담당자로, 2025년 6월 10�
 ---
 
 ---
-### 9. **구체적 워크플로우**
-#### Meeting Notes RAG System
-LlamaIndex를 사용한 회의록 검색 및 요약 시스템.
-
+### 10. **실행방법**
 ####실행 방법
 1. config/config.yaml에 API 설정 입력.
 2. python scripts/preprocess.py
