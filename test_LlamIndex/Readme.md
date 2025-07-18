@@ -6,7 +6,7 @@
 - **벡터DB**: LlamaIndex가 지원하는 벡터DB (예: FAISS, Weaviate, Chroma 등) 중 하나 선택.
 - **제약**: 메타데이터를 수동으로 생성하지 않고 자동화.
 
-### 1.1 **구현 환경 가정**
+### 1.1 **폴더 구조**
 ```
 project_root/
 ├── config/
