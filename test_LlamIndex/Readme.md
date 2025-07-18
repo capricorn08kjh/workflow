@@ -1,5 +1,3 @@
----
-
 ### 1. **구현 환경 가정**
 - **모델**: 회사 서버에서 제공하는 OpenAI-like API (예: LLaMA, GPT-4o 호환 엔드포인트).
 - **LlamaIndex**: OpenAI-like API를 지원하는 LlamaIndex의 `OpenAILike` 설정 사용.
@@ -7,8 +5,6 @@
 - **목표**: "김영철"이 고객사 담당자로 언급된 문서를 검색하고 요약.
 - **벡터DB**: LlamaIndex가 지원하는 벡터DB (예: FAISS, Weaviate, Chroma 등) 중 하나 선택.
 - **제약**: 메타데이터를 수동으로 생성하지 않고 자동화.
-
----
 
 ### 2. **LlamaIndex 설정 및 OpenAI-like API 통합**
 LlamaIndex에서 회사 서버의 OpenAI-like API를 사용하려면, `OpenAILike` 설정을 통해 커스텀 엔드포인트를 지정합니다.
