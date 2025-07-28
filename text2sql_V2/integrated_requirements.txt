@@ -1,0 +1,79 @@
+# 통합 Text2SQL 시스템 필수 패키지
+
+# 기본 데이터 처리
+pandas>=1.5.0
+numpy>=1.21.0
+python-dateutil>=2.8.2
+
+# Oracle 데이터베이스
+oracledb>=1.3.0
+
+# LlamaIndex 및 LLM
+llama-index>=0.9.0
+llama-index-llms-openai>=0.1.0  
+llama-index-llms-openai-like>=0.1.0
+llama-index-embeddings-openai>=0.1.0
+llama-index-vector-stores-chroma>=0.1.0
+llama-index-core>=0.9.0
+
+# ChromaDB 및 벡터 데이터베이스
+chromadb>=0.4.0
+sentence-transformers>=2.2.0
+
+# 시각화
+plotly>=5.15.0
+matplotlib>=3.5.0
+seaborn>=0.12.0
+kaleido>=0.2.1  # plotly 이미지 생성용
+
+# 웹 프레임워크 (선택적)
+fastapi>=0.100.0
+uvicorn>=0.20.0
+pydantic>=2.0.0
+jinja2>=3.1.0  # HTML 템플릿용
+
+# 비동기 처리
+asyncio-throttle>=1.0.2
+aiofiles>=23.0.0
+
+# 유틸리티
+python-dotenv>=1.0.0  # 환경변수 관리
+pyyaml>=6.0  # YAML 설정 파일
+click>=8.0.0  # CLI 인터페이스
+rich>=13.0.0  # 콘솔 출력 개선
+
+# 데이터 검증 및 직렬화
+marshmallow>=3.19.0
+jsonschema>=4.17.0
+
+# 테스트 및 개발
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+requests>=2.28.0
+black>=23.0.0  # 코드 포맷팅
+flake8>=6.0.0  # 코드 린팅
+
+# 로깅 및 모니터링
+structlog>=23.0.0
+prometheus-client>=0.16.0  # 메트릭 수집
+
+# 문서화
+sphinx>=6.0.0
+sphinx-rtd-theme>=1.2.0
+
+# 보안
+cryptography>=3.4.0
+authlib>=1.2.0  # OAuth 인증
+
+# 성능 최적화
+cachetools>=5.3.0
+redis>=4.5.0  # 캐싱 (선택적)
+
+# 파일 처리
+openpyxl>=3.1.0  # Excel 파일
+python-docx>=0.8.11  # Word 문서
+PyPDF2>=3.0.0  # PDF 파일
+
+# 추가 NLP 기능
+spacy>=3.6.0  # 자연어 처리
+nltk>=3.8.0   # 텍스트 분석
