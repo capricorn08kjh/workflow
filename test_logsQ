@@ -1,0 +1,37 @@
+# logging_setup.py
+import os, logging
+from logging.handlers import TimedRotatingFileHandler
+
+def setup_logging():
+    os.makedirs("logs", exist_ok=True)
+
+    fmt = "%(asctime)s %(levelname)s [%(name)s] %(message)s"
+    formatter = logging.Formatter(fmt)
+
+    # 공용(앱/에러) 로그: 자정마다 회전
+    app_file = TimedRotatingFileHandler("logs/app.log", when="midnight", interval=1, backupCount=7, encoding="utf-8")
+    app_file.setFormatter(formatter)
+
+    # access 로그: 자정마다 회전 (포맷 분리)
+    access_fmt = "%(asctime)s %(levelname)s [%(name)s] %(client_addr)s \"%(request_line)s\" %(status_code)s"
+    access_file = TimedRotatingFileHandler("logs/access.log", when="midnight", interval=1, backupCount=7, encoding="utf-8")
+    access_file.setFormatter(logging.Formatter(access_fmt))
+
+    # 루트 콘솔 + 파일
+    root = logging.getLogger()
+    if not any(isinstance(h, TimedRotatingFileHandler) for h in root.handlers):
+        root.setLevel(logging.INFO)
+        root.addHandler(app_file)
+
+    # uvicorn 계열
+    for name in ["uvicorn", "uvicorn.error"]:
+        lg = logging.getLogger(name)
+        lg.setLevel(logging.INFO)
+        lg.addHandler(app_file)
+        lg.propagate = False
+
+    # access 전용
+    al = logging.getLogger("uvicorn.access")
+    al.setLevel(logging.INFO)
+    al.addHandler(access_file)
+    al.propagate = False
