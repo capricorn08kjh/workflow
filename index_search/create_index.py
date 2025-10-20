@@ -1,4 +1,3 @@
-# create_index.py
 import argparse
 import json
 import os
@@ -76,7 +75,6 @@ def get_payload_root(obj, elasticdump=False, payload_path=None):
     if elasticdump and "index" in obj and len(obj) == 1:
         return None  # 메타라인 스킵
 
-    # payload_path 우선
     if payload_path:
         base = obj
         for part in payload_path.split("."):
@@ -86,7 +84,6 @@ def get_payload_root(obj, elasticdump=False, payload_path=None):
                 return None
         return base
 
-    # 엘라스틱 덤프 기본(_source)
     if elasticdump and isinstance(obj, dict) and "_source" in obj:
         return obj["_source"]
 
@@ -122,7 +119,9 @@ def build_index(lmdb_path, files, keys, elasticdump=False, payload_path=None,
     kv_db = env.open_db(b"kv", dupsort=True)  # 동일 키에 중복값 허용
 
     total_put = 0
-    with env.begin(db=kv_db, write=True) as txn:
+    txn = env.begin(db=kv_db, write=True)  # 🔒 첫 트랜잭션 명시적으로 시작
+
+    try:
         for file_id, p in enumerate(files):
             with open(p, "rb") as f:
                 offset = 0
@@ -131,7 +130,6 @@ def build_index(lmdb_path, files, keys, elasticdump=False, payload_path=None,
                     try:
                         obj = json.loads(line)
                     except json.JSONDecodeError:
-                        # 깨진 라인은 스킵
                         pass
                     else:
                         base = get_payload_root(obj, elasticdump=elasticdump, payload_path=payload_path)
@@ -143,15 +141,18 @@ def build_index(lmdb_path, files, keys, elasticdump=False, payload_path=None,
                                     v = f"{file_id}{SEP}{offset}".encode("utf-8")
                                     txn.put(k, v, db=kv_db, dupdata=True)
                                     total_put += 1
-                                    if total_put % commit_interval == 0:
-                                        txn.commit()
-                                        txn = env.begin(db=kv_db, write=True)
+                                    if commit_interval > 0 and (total_put % commit_interval == 0):
+                                        txn.commit()  # 🔓 현재 txn 종료
+                                        txn = env.begin(db=kv_db, write=True)  # 🔒 즉시 새 txn
                     offset += len(line)
                     line = f.readline()
-        txn.commit()
 
-    env.sync()
-    env.close()
+        txn.commit()  # 🔓 마지막 커밋
+    finally:
+        # env는 마지막에만 닫음
+        env.sync()
+        env.close()
+
     return total_put
 
 def main():
