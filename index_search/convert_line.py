@@ -18,3 +18,13 @@ if __name__ == "__main__":
     args = ap.parse_args()
 
     json_to_jsonl(args.input, args.output)
+    
+    
+"""
+python create_index.py \
+  --data-dir ./data \
+  --files-glob "*.jsonl" \
+  --keys user.id items[].sku meta.device.os \
+  --lmdb kv_index.lmdb \
+  --manifest manifest.json
+"""
