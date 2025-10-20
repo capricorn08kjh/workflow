@@ -265,3 +265,47 @@ if __name__ == "__main__":
     uvicorn.run(app, host=args.host, port=args.port)
 
 # python api_search.py --lmdb kv_index.lmdb --manifest manifest.json --host 0.0.0.0 --port 8000
+"""
+교차검색(and) 복수검색(or)
+curl -X POST http://localhost:8000/search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "any": [
+      {"key": "_source.morps[].text", "value": "서울역"},
+      {"key": "_source.title", "values": ["서울역", "용산역"]}
+    ],
+    "all": [
+      {"key": "_source.morps[].pos", "values": ["NNP", "NNG"]}
+    ],
+    "limit": 100,
+    "only_source": false,
+    "format": "json"
+  }'
+
+OR만
+curl -X POST http://localhost:8000/search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "any": [
+      {"key": "morps[].text", "values": ["서울역", "용산역", "부산역"]}
+    ],
+    "limit": 50
+  }'
+
+
+AND만
+curl -X POST http://localhost:8000/search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "all": [
+      {"key": "_source.morps[].text", "value": "서울역"},
+      {"key": "_source.morps[].pos", "values": ["NNP","NNG"]}
+    ],
+    "limit": 20,
+    "only_source": true,
+    "format": "ndjson"
+  }'
+
+
+
+"""
