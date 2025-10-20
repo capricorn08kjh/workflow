@@ -75,3 +75,15 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+"""
+python search_index.py \
+  --lmdb kv_index.lmdb \
+  --manifest manifest.json \
+  --key "_source.user.id" \
+  --value "u01" \
+  --limit 100
+
+python search_index.py --lmdb kv_index.lmdb --manifest manifest.json --key "items[].sku" --value "SKU-123"
+
+"""
