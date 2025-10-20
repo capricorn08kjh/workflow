@@ -7,6 +7,24 @@ import lmdb
 
 SEP = "\x1f"  # (key_path, value) 구분자
 
+# 파일 상단 근처 공용 상수/함수로 추가하세요
+SEP = "\x1f"
+MAX_KEY_BYTES = 480  # 511 여유 고려 (내부 오버헤드 감안)
+
+def make_key_bytes(key_path: str, value: str) -> bytes:
+    """
+    (key_path + SEP + value)를 UTF-8로 인코딩.
+    총 길이가 LMDB 한계를 넘으면 value를 해시로 치환.
+    """
+    raw = f"{key_path}{SEP}{value}".encode("utf-8")
+    if len(raw) <= MAX_KEY_BYTES:
+        return raw
+    import hashlib
+    h = hashlib.sha256(f"{key_path}{SEP}{value}".encode("utf-8")).hexdigest()
+    # 해시 사용 표식(optional): '#h:' 접두어로 디버깅 용이
+    return f"{key_path}{SEP}#h:{h}".encode("utf-8")
+
+
 # ---------- 유틸: 스칼라 판별/정규화 ----------
 def _is_scalar(x):
     return isinstance(x, (str, int, float, bool)) or x is None
