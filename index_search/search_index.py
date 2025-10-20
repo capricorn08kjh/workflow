@@ -1,7 +1,6 @@
 # search_index.py
 import argparse
 import json
-from pathlib import Path
 import mmap
 import lmdb
 
@@ -63,7 +62,7 @@ def lookup(lmdb_path, key_path, value, manifest_path="manifest.json", limit=None
     return results
 
 def main():
-    ap = argparse.ArgumentParser(description="Exact-match lookup from LMDB offset index (nested keys supported).")
+    ap = argparse.ArgumentParser(description="Exact-match lookup from LMDB offset index (nested key paths).")
     ap.add_argument("--lmdb", default="kv_index.lmdb")
     ap.add_argument("--manifest", default="manifest.json")
     ap.add_argument("--key", required=True, help='Key path (e.g., "user.id", "items[].sku")')
