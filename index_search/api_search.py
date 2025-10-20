@@ -47,14 +47,13 @@ class SearchRuntime:
 
     # ---- core: postings ----
     def postings_for(self, key_path: str, value: str) -> Set[Tuple[int, int]]:
-        """Return set of (file_id, offset) for exact-match term."""
-        k = f"{key_path}{SEP}{value}".encode("utf-8")
+        k = make_key_bytes(key_path, str(value))  # 길이 보호용(해시) 유틸 사용 권장
         out: Set[Tuple[int, int]] = set()
         with self.env.begin(db=self.kv_db) as txn, txn.cursor(db=self.kv_db) as cur:
             if cur.set_key(k):
-                vv = cur.value()
                 while True:
-                    file_id_s, offset_s = vv.decode("utf-8").split(SEP, 1)
+                    # ✅ 매회 갱신이 핵심
+                    file_id_s, offset_s = cur.value().decode("utf-8").split(SEP, 1)
                     out.add((int(file_id_s), int(offset_s)))
                     if not cur.next_dup():
                         break
