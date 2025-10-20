@@ -29,3 +29,6 @@ if __name__ == "__main__":
     import sys
     lmdb_path, key_path, value = sys.argv[1], sys.argv[2], sys.argv[3]
     print(count_postings(lmdb_path, key_path, value))
+    
+# python probe_postings.py kv_index.lmdb "_source.morps[].text" "서울역"
+# python probe_postings.py kv_index.lmdb "_source.title" "서울역"
