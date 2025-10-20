@@ -181,3 +181,13 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+"""
+python create_index.py \
+  --data-dir ./data \
+  --files-glob "*.json" \
+  --keys _source.user.id items[].sku \
+  --elasticdump \
+  --lmdb kv_index.lmdb \
+  --manifest manifest.json
+"""
