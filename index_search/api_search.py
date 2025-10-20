@@ -263,3 +263,5 @@ if __name__ == "__main__":
     args = parse_args()
     create_app(args.lmdb, args.manifest)
     uvicorn.run(app, host=args.host, port=args.port)
+
+# python api_search.py --lmdb kv_index.lmdb --manifest manifest.json --host 0.0.0.0 --port 8000
