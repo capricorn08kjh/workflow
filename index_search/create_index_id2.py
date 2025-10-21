@@ -11,6 +11,24 @@ SEP = "\x1f"
 MAX_KEY_BYTES = 480  # LMDB 키 길이 제한(≈511B) 대비 여유
 META_ACTION_KEYS = ("index", "create")  # elasticdump 메타라인 지원 (필요시 "update" 추가 가능)
 
+
+def normalize_id(val):
+    # _id를 인덱싱/검색 모두에서 같은 규칙으로 문자열화
+    if val is None:
+        return None
+    if isinstance(val, (str, int, float, bool)):
+        return str(val)
+    if isinstance(val, dict):
+        # Mongo 스타일 등 처리
+        for k in ("$oid", "oid", "_id", "id", "value"):
+            if k in val and isinstance(val[k], (str, int, float, bool)):
+                return str(val[k])
+        # 그 외 dict은 안정적 문자열로
+        import json as _json
+        return _json.dumps(val, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    # 리스트 같은 건 받지 않는 게 안전하지만, 혹시 오면 문자열화
+    return str(val)
+
 def make_key_bytes(key_path: str, value: str) -> bytes:
     raw = f"{key_path}{SEP}{value}".encode("utf-8")
     if len(raw) <= MAX_KEY_BYTES:
