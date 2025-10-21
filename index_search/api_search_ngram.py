@@ -243,3 +243,14 @@ if __name__ == "__main__":
     args = parse_args()
     create_app(args.lmdb, args.manifest)
     uvicorn.run(app, host=args.host, port=args.port)
+    
+"""
+curl -X POST http://localhost:8000/search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "any": [
+      { "key": "_source.morps[].text", "contains": "서울역", "ngram": 2 }
+    ],
+    "limit": 50
+  }' -o contains_results.json
+"""
