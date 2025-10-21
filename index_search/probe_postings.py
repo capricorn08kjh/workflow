@@ -1,6 +1,5 @@
 # probe_postings.py
-import lmdb
-import hashlib
+import lmdb, hashlib
 
 SEP = "\x1f"
 MAX_KEY_BYTES = 480
@@ -14,10 +13,10 @@ def make_key_bytes(key_path: str, value: str) -> bytes:
 
 def count_postings(lmdb_path, key_path, value):
     env = lmdb.open(lmdb_path, subdir=False, readonly=True, lock=False, max_dbs=2)
-    kv_db = env.open_db(b"kv")
+    kv = env.open_db(b"kv")
     k = make_key_bytes(key_path, value)
     n = 0
-    with env.begin(db=kv_db) as txn, txn.cursor(db=kv_db) as cur:
+    with env.begin(db=kv) as txn, txn.cursor(db=kv) as cur:
         if cur.set_key(k):
             n += 1
             while cur.next_dup():
@@ -29,6 +28,5 @@ if __name__ == "__main__":
     import sys
     lmdb_path, key_path, value = sys.argv[1], sys.argv[2], sys.argv[3]
     print(count_postings(lmdb_path, key_path, value))
-    
 # python probe_postings.py kv_index.lmdb "_source.morps[].text" "서울역"
 # python probe_postings.py kv_index.lmdb "_source.title" "서울역"
