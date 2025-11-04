@@ -1,13 +1,28 @@
-from typing import List, Dict, Any, Optional, Union
+Optional, Union, Iterable
 from pathlib import Path
 import html
 import json
 import argparse
+import re
 
 try:
-    import pandas as pd  # optional, used if available
+    import pandas as pd  # optional
 except Exception:
-    pd = None  # fallback
+    pd = None
+
+
+def _normalize_columns(columns: Optional[Union[str, Iterable[str]]]) -> Optional[List[str]]:
+    if columns is None:
+        return None
+    if isinstance(columns, str):
+        parts = [p.strip() for p in re.split(r'[,\s]+', columns) if p.strip()]
+        return parts if parts else None
+    try:
+        return [str(c).strip() for c in columns]
+    except TypeError:
+        s = str(columns)
+        parts = [p.strip() for p in re.split(r'[,\s]+', s) if p.strip()]
+        return parts if parts else None
 
 
 def render_hier_table_html(
@@ -15,43 +30,33 @@ def render_hier_table_html(
     id_column: str = "row_id",
     delimiter: str = "^",
     label_column_name: str = "항목",
-    visible_columns: Optional[List[str]] = None,
+    visible_columns: Optional[Union[str, Iterable[str]]] = None,
     aggregate: Optional[Dict[str, str]] = None,
     initial_expand_level: int = 0,
 ) -> str:
-    """
-    Build a collapsible hierarchical HTML table (treegrid-like) from data.
-    'data' is a list of dicts or a pandas DataFrame.
-    'id_column' contains the hierarchical id like 'memory^dram^ddr5'.
-    'aggregate' supports per-column {'col':'sum'|'avg'|'min'|'max'} for parents.
-    """
-    # Normalize data to list of dicts
-    rows: List[Dict[str, Any]]
     if pd is not None and hasattr(data, "to_dict"):
         rows = data.to_dict(orient="records")
     else:
-        rows = list(data)  # assume list[dict]
+        rows = list(data)
 
     if not rows:
         return "<p>표시할 데이터가 없습니다.</p>"
 
     aggregate = aggregate or {}
 
-    # All columns discovery
     all_keys = set()
     for r in rows:
         for k in r.keys():
-            all_keys.add(k)
+            all_keys.add(str(k))
 
-    # Columns to show
-    if visible_columns is None:
+    norm_cols = _normalize_columns(visible_columns)
+    if norm_cols is None:
         cols = [k for k in all_keys if k != id_column]
     else:
-        cols = [c for c in visible_columns if c != id_column]
+        cols = [c for c in norm_cols if c != id_column]
 
     numeric_agg_cols = set(aggregate.keys())
 
-    # Node structure
     class Node:
         __slots__ = ("id","key","label","parent_id","level","values","children","is_leaf")
         def __init__(self, id_, key, label, parent_id, level):
@@ -60,12 +65,11 @@ def render_hier_table_html(
             self.label = label
             self.parent_id = parent_id
             self.level = level
-            self.values: Dict[str, Any] = {}
-            self.children: set[str] = set()
+            self.values = {}
+            self.children = set()
             self.is_leaf = False
 
     def slug(s: str) -> str:
-        # DOM-safe id
         return "".join(ch if ch.isalnum() or ch in "-_:.|" else "_" for ch in s)
 
     nodes: Dict[str, Node] = {}
@@ -82,7 +86,6 @@ def render_hier_table_html(
                 nodes[parent_id].children.add(id_)
         return nodes[id_]
 
-    # Insert rows into leaf nodes
     for row in rows:
         raw = row.get(id_column, None)
         if raw is None:
@@ -90,19 +93,12 @@ def render_hier_table_html(
         parts = [p.strip() for p in str(raw).split(delimiter) if str(p).strip() != ""]
         if not parts:
             continue
-        # Create all prefixes
         for i in range(len(parts)):
             node = ensure_node(parts[:i+1])
             if i == len(parts) - 1:
                 node.is_leaf = True
-                # Store original rows under a temp bucket for merging
-                lst = node.values.get("_rows")
-                if lst is None:
-                    node.values["_rows"] = [row]
-                else:
-                    lst.append(row)
+                node.values.setdefault("_rows", []).append(row)
 
-    # Aggregate values bottom-up
     ordered_by_level = sorted(nodes.values(), key=lambda n: n.level)
     ids_in_order = [n.id for n in ordered_by_level]
 
@@ -114,16 +110,11 @@ def render_hier_table_html(
 
     for i in range(len(ids_in_order)-1, -1, -1):
         n = nodes[ids_in_order[i]]
-        vals: Dict[str, Any] = {}
+        vals = {}
 
-        # Leaf own values
         if n.is_leaf:
-            # Merge duplicates: numeric agg cols -> sum; else take last
             for c in cols:
-                arr = []
-                for r in n.values.get("_rows", []):
-                    if c in r and r[c] is not None:
-                        arr.append(r[c])
+                arr = [r[c] for r in n.values.get("_rows", []) if c in r and r[c] is not None]
                 if not arr:
                     continue
                 if c in numeric_agg_cols:
@@ -133,19 +124,14 @@ def render_hier_table_html(
                             num = float(v)
                         except Exception:
                             num = 0.0
-                        if num == num:  # not NaN
+                        if num == num:
                             s += num
                     vals[c] = s
                 else:
                     vals[c] = arr[-1]
 
-        # Merge children according to aggregate rules
         for c, rule in aggregate.items():
-            child_vals = []
-            for child_id in n.children:
-                cv = nodes[child_id].values.get(c, None)
-                if cv is not None:
-                    child_vals.append(cv)
+            child_vals = [nodes[child_id].values.get(c) for child_id in n.children if nodes[child_id].values.get(c) is not None]
             if rule == "sum":
                 total = 0.0
                 for v in child_vals:
@@ -194,14 +180,12 @@ def render_hier_table_html(
                 if cand:
                     vals[c] = min(cand)
 
-        # Save merged
         n.values.update(vals)
 
-    # Build traversal order (DFS with label sort)
     roots = [n for n in nodes.values() if n.parent_id is None]
     roots.sort(key=lambda x: x.label)
 
-    ordered: List[Node] = []
+    ordered = []
     def visit(node: Node):
         ordered.append(node)
         children = [nodes[cid] for cid in node.children]
@@ -211,7 +195,6 @@ def render_hier_table_html(
     for r in roots:
         visit(r)
 
-    # HTML helpers
     def fmt_value(v):
         if v is None:
             return ""
@@ -228,7 +211,6 @@ def render_hier_table_html(
     def esc(s):
         return html.escape(str(s)) if s is not None else ""
 
-    # Build HTML
     style = """
 <style>
   table.htree { border-collapse: collapse; width: 100%; }
@@ -316,7 +298,7 @@ def _read_input(path: Path):
     if not path.exists():
         raise FileNotFoundError(path)
     try:
-        import pandas as pd  # try again inside
+        import pandas as pd
         if path.suffix.lower() in {".csv"}:
             return pd.read_csv(path)
         if path.suffix.lower() in {".xlsx", ".xls"}:
@@ -328,7 +310,6 @@ def _read_input(path: Path):
                 return json.loads(path.read_text(encoding="utf-8"))
     except Exception:
         pass
-    # Fallback without pandas
     if path.suffix.lower() == ".json":
         return json.loads(path.read_text(encoding="utf-8"))
     if path.suffix.lower() == ".csv":
@@ -354,7 +335,7 @@ def _parse_agg(expr: Optional[str]) -> Dict[str, str]:
 
 def save_hier_table_html(
     data,
-    output_path: Union[str, Path],
+    output_path: Path,
     **kwargs
 ) -> Path:
     html_doc = render_hier_table_html(data, **kwargs)
@@ -370,12 +351,13 @@ def main(argv=None):
     p.add_argument("--id-column", default="row_id", help="계층 ID 컬럼명 (default: row_id)")
     p.add_argument("--delimiter", default="^", help="계층 구분자 (default: ^)")
     p.add_argument("--label", default="항목", help="첫 컬럼 제목 (default: 항목)")
-    p.add_argument("--columns", nargs="*", help="표시할 컬럼 목록 (공백으로 구분)")
+    p.add_argument("--columns", help="표시할 컬럼 목록. 공백 또는 콤마로 구분 (예: '연도 데이터라벨 예상실적' 또는 '연도,데이터라벨,예상실적')")
     p.add_argument("--aggregate", help='집계 규칙 예: "예상실적=sum,실제실적=sum"')
     p.add_argument("--expand", type=int, default=0, help="초기 펼침 레벨 (0=루트만)")
     args = p.parse_args(argv)
 
     data = _read_input(Path(args.input))
+    cols = _normalize_columns(args.columns)
     agg = _parse_agg(args.aggregate)
 
     html_doc = render_hier_table_html(
@@ -383,13 +365,9 @@ def main(argv=None):
         id_column=args.id_column,
         delimiter=args.delimiter,
         label_column_name=args.label,
-        visible_columns=args.columns,
+        visible_columns=cols,
         aggregate=agg,
         initial_expand_level=args.expand,
     )
     Path(args.out).write_text(html_doc, encoding="utf-8")
     print(f"Saved HTML to {args.out}")
-
-
-if __name__ == "__main__":
-    main()
