@@ -1,0 +1,115 @@
+<!doctype html>
+<meta charset="utf-8" />
+<style>
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #ddd; padding: 8px; }
+  tr[hidden] { display: none; }
+  .toggle {
+    border: none; background: none; cursor: pointer;
+    font: inherit; padding: 0 4px; line-height: 1;
+  }
+  /* 들여쓰기: level 값에 따라 왼쪽 패딩 */
+  td.indent { padding-left: calc(var(--level, 0) * 1.25rem + 8px); }
+  /* 접힘 표시용 아이콘 */
+  .caret::before { content: "▶"; display: inline-block; transform: rotate(0deg); transition: transform .15s; }
+  .caret[aria-expanded="true"]::before { transform: rotate(90deg); }
+</style>
+
+<table role="treegrid" aria-label="학교 계층 표">
+  <thead>
+    <tr>
+      <th>구분</th>
+      <th>설명</th>
+    </tr>
+  </thead>
+  <tbody id="tree">
+    <!-- 최상위 -->
+    <tr data-id="school" data-level="0" aria-level="1" aria-expanded="false">
+      <td class="indent" style="--level:0">
+        <button class="toggle caret" aria-expanded="false" aria-controls="row-school" title="펼치기/접기"></button>
+        학교
+      </td>
+      <td>학교 분류 최상위</td>
+    </tr>
+
+    <!-- 대학교 (자식) -->
+    <tr id="row-school" data-id="univ" data-parent="school" data-level="1" aria-level="2" hidden>
+      <td class="indent" style="--level:1">
+        <button class="toggle caret" aria-expanded="false" aria-controls="row-univ" title="펼치기/접기"></button>
+        대학교
+      </td>
+      <td>지역별로 세분화</td>
+    </tr>
+    <tr id="row-univ" data-id="univ-seoul" data-parent="univ" data-level="2" aria-level="3" hidden>
+      <td class="indent" style="--level:2">서울권</td>
+      <td>서울 소재 대학</td>
+    </tr>
+    <tr data-id="univ-busan" data-parent="univ" data-level="2" aria-level="3" hidden>
+      <td class="indent" style="--level:2">부산권</td>
+      <td>부산 소재 대학</td>
+    </tr>
+
+    <!-- 고등학교 (자식) -->
+    <tr data-id="high" data-parent="school" data-level="1" aria-level="2" hidden>
+      <td class="indent" style="--level:1">
+        <button class="toggle caret" aria-expanded="false" aria-controls="row-high" title="펼치기/접기"></button>
+        고등학교
+      </td>
+      <td>계열 및 지역</td>
+    </tr>
+    <tr id="row-high" data-id="high-human" data-parent="high" data-level="2" aria-level="3" hidden>
+      <td class="indent" style="--level:2">인문계</td>
+      <td>일반계열</td>
+    </tr>
+    <tr data-id="high-voc" data-parent="high" data-level="2" aria-level="3" hidden>
+      <td class="indent" style="--level:2">실업계</td>
+      <td>직업계열</td>
+    </tr>
+
+    <!-- 중학교 -->
+    <tr data-id="middle" data-parent="school" data-level="1" aria-level="2" hidden>
+      <td class="indent" style="--level:1">중학교</td>
+      <td>중등 교육</td>
+    </tr>
+
+    <!-- 초등학교 -->
+    <tr data-id="elem" data-parent="school" data-level="1" aria-level="2" hidden>
+      <td class="indent" style="--level:1">초등학교</td>
+      <td>초등 교육</td>
+    </tr>
+  </tbody>
+</table>
+
+<script>
+  const tbody = document.getElementById('tree');
+
+  // 자식 행들 show/hide
+  function setChildrenVisible(parentId, visible) {
+    const rows = [...tbody.querySelectorAll(`tr[data-parent="${parentId}"]`)];
+    for (const row of rows) {
+      row.hidden = !visible;
+      // 부모가 접히면 하위 전체도 접기
+      if (!visible) {
+        const btn = row.querySelector('.toggle');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+        row.setAttribute('aria-expanded', 'false');
+        setChildrenVisible(row.dataset.id, false);
+      }
+    }
+  }
+
+  // 클릭 핸들러(이벤트 위임)
+  tbody.addEventListener('click', (e) => {
+    const btn = e.target.closest('.toggle');
+    if (!btn) return;
+
+    const tr = btn.closest('tr');
+    const id = tr.dataset.id;
+    const expanded = btn.getAttribute('aria-expanded') === 'true';
+    const next = !expanded;
+
+    btn.setAttribute('aria-expanded', String(next));
+    tr.setAttribute('aria-expanded', String(next));
+    setChildrenVisible(id, next);
+  });
+</script>
