@@ -19,21 +19,43 @@ vectorstore = Chroma(
 )
 
 # 2) 컬렉션에서 모든 Document 복원 (BM25 구축용)
-def load_all_docs_from_chroma(vs: Chroma, page_size: int = 5000) -> List[Document]:
-    coll = vs._collection
+from typing import List
+from langchain.schema import Document
+
+def load_all_docs_from_chroma(vs, page_size: int = 5000) -> List[Document]:
+    """
+    vs: langchain_community.vectorstores.Chroma 인스턴스
+    page_size: 페이징 크기 (대량 데이터 대비)
+    """
+    coll = vs._collection  # chromadb.Collection 핸들
     total = coll.count()
     out: List[Document] = []
+
     for offset in range(0, total, page_size):
+        # include에는 ids를 넣지 않습니다.
         batch = coll.get(
-            include=["documents", "metadatas", "ids"],
+            include=["documents", "metadatas"],  # ✅ ids 금지
             limit=page_size,
             offset=offset
         )
-        for doc, meta, _id in zip(batch["documents"], batch["metadatas"], batch["ids"]):
-            meta = (meta or {}) | {"_id": _id}
-            out.append(Document(page_content=doc, metadata=meta))
-    return out
+        # ids는 별도로 항상 반환됩니다. (0.5.x 기준)
+        ids = batch.get("ids", [])
+        docs = batch.get("documents", [])
+        metas = batch.get("metadatas", [])
 
+        # 혹시 특정 버전/환경에서 ids가 비어온다면 대비
+        if not ids or len(ids) != len(docs):
+            # 안전장치: 오프셋 기반 가짜 id 부여
+            ids = [f"{offset+i}" for i in range(len(docs))]
+
+        # metadatas가 None일 수 있으므로 dict 보정
+        for _id, doc, meta in zip(ids, docs, metas):
+            meta = meta or {}
+            # BM25/중복제거/융합용으로 _id를 metadata에 넣어 둡니다.
+            meta = {**meta, "_id": _id}
+            out.append(Document(page_content=doc, metadata=meta))
+
+    return out
 docs_chunked = load_all_docs_from_chroma(vectorstore)
 print(f"Loaded {len(docs_chunked)} docs from Chroma")
 
