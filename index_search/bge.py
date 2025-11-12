@@ -175,3 +175,38 @@ if __name__ == "__main__":
         overlap=100,
     )
     print("✅ Chroma 구축 완료")
+    
+    
+    
+    
+def rrf_merge(result_lists, weights=None, k=60, topk=10):
+    """
+    result_lists: [ [("id", score_or_None), ...], ... ]  # 각 리스트는 이미 '좋은 순서'로 정렬되어 있다고 가정
+    weights:      [w1, w2, ...]  (None이면 모두 동일 가중치)
+    """
+    if weights is None:
+        weights = [1.0] * len(result_lists)
+    scores = defaultdict(float)
+    seen = set()
+    # 문서 -> 최소 랭크(타이브레이커 용도)
+    min_rank = defaultdict(lambda: 10**9)
+
+    for li, results in enumerate(result_lists):
+        w = weights[li]
+        for rank, (doc_id, _) in enumerate(results):
+            rr = 1.0 / (k + rank + 1)
+            scores[doc_id] += w * rr
+            min_rank[doc_id] = min(min_rank[doc_id], rank)
+
+    fused = sorted(scores.items(), key=lambda x: (-x[1], min_rank[x[0]]))
+    return fused[:topk]
+
+# 5) 실행 예시
+query = "경쟁사의 제품개발 진척상황"
+bm25_res  = search_bm25(query, topk=10)
+dense_res = search_dense(query, topk=10)
+
+fused = rrf_merge([bm25_res, dense_res], weights=[0.6, 0.4], k=60, topk=10)
+print("BM25:", bm25_res)
+print("Dense IDs:", [d for d,_ in dense_res])
+print("RRF fused:", fused)  # [("D1", score), ...] 형태
