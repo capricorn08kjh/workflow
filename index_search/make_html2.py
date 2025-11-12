@@ -321,3 +321,129 @@ def render_hier_table_html(
 {script}
 """
     return html_doc
+    
+    
+"""
+# 함수 시그니처에 header_groups 추가
+def render_hier_table_html(
+    data,
+    id_column="row_id",
+    delimiter="^",
+    label_column_name="항목",
+    visible_columns=None,
+    aggregate=None,
+    initial_expand_level=0,
+    text_columns=None,
+    leading_columns=None,
+    # ▼ 추가: 상단 그룹 헤더 정의. 예: {"실적": ["예상실적","실제실적"]}
+    header_groups: dict[str, list[str]] | None = None,
+) -> str:
+    ...
+    # (중략) leading / trailing 계산까지는 기존 그대로 유지
+    # leading = [...]; trailing = [...]
+
+    # ─────────────────────────────────────────────────────────
+    # 그룹 헤더 계산
+    header_groups = header_groups or {}
+    group_by_col = {}
+    for gname, cols in header_groups.items():
+        for c in cols:
+            group_by_col[c] = gname
+
+    def alias(c):  # (별칭 쓰면 여기서 바꿔도 됨)
+        return c
+
+    # 1행: 상단 그룹 행 (rowspan / colspan 결정)
+    top_cells = []
+    # leading은 그룹핑 대상 아님 → 2행까지 세로합치기(rowspan=2)
+    for c in leading:
+        top_cells.append(f'<th rowspan="2">{alias(c)}</th>')
+
+    # 계층 라벨(트리)도 2행 합치기
+    top_cells.append(f'<th rowspan="2">{label_column_name}</th>')
+
+    # trailing 중 group에 속한 것들은 그룹명으로 묶고, 아닌 것들은 rowspan=2
+    # 그룹 순서는 trailing 순서에 따릅니다.
+    used_group = []
+    i = 0
+    while i < len(trailing):
+        col = trailing[i]
+        g = group_by_col.get(col)
+        if not g:
+            top_cells.append(f'<th rowspan="2">{alias(col)}</th>')
+            i += 1
+        else:
+            # 같은 그룹에 속한 연속된 컬럼들의 길이 계산
+            j = i
+            members = []
+            while j < len(trailing) and group_by_col.get(trailing[j]) == g:
+                members.append(trailing[j])
+                j += 1
+            top_cells.append(f'<th colspan="{len(members)}">{g}</th>')
+            used_group.append((g, members))
+            i = j
+
+    # 2행: 하위 컬럼명 행
+    bottom_cells = []
+    for c in leading:
+        # leading은 1행에서 rowspan=2 처리했으므로 2행에 아무 것도 추가 안 함
+        pass
+    # 계층 라벨(트리)도 rowspan=2라서 2행에 없음
+
+    # trailing: 그룹에 속한 컬럼은 하위에 실제 컬럼명, 그룹 아닌 컬럼은 이미 1행에서 rowspan=2 했으니 2행에 없음
+    i = 0
+    while i < len(trailing):
+        col = trailing[i]
+        g = group_by_col.get(col)
+        if not g:
+            i += 1
+            continue
+        # 위에서 이미 연속 구간을 먹었으므로 여기서도 같은 구간 반복
+        j = i
+        while j < len(trailing) and group_by_col.get(trailing[j]) == g:
+            bottom_cells.append(f'<th>{alias(trailing[j])}</th>')
+            j += 1
+        i = j
+
+    thead_html = (
+        "<thead>"
+        f"<tr>{''.join(top_cells)}</tr>"
+        f"<tr>{''.join(bottom_cells)}</tr>"
+        "</thead>"
+    )
+    # ─────────────────────────────────────────────────────────
+
+    # 기존 코드에서 thead 생성 부분을 위 thead_html로 대체:
+    thead = thead_html
+
+    # 나머지 tbody, script 생성은 기존 그대로…
+    
+    
+from hier_table import render_hier_table_html
+import pandas as pd
+
+df = pd.DataFrame([
+    {"yyyymm": "202501", "DATA_LABEL": "32_graphic", "예상실적": 120, "실제실적": 110},
+    {"yyyymm": "202501", "DATA_LABEL": "64_graphic", "예상실적":  80, "실제실적":  75},
+    {"yyyymm": "202502", "DATA_LABEL": "16_compute", "예상실적":  60, "실제실적":  55},
+])
+
+# 트리 라벨: DATA_LABEL의 '_' 오른쪽만 사용
+df["row_id"] = df["DATA_LABEL"].apply(lambda s: str(s).rsplit("_", 1)[-1])
+
+html = render_hier_table_html(
+    df,
+    id_column="row_id",
+    label_column_name="구분(DATA_LABEL)",
+    visible_columns=["yyyymm","예상실적","실제실적"],
+    leading_columns=["yyyymm"],   # yyyymm을 맨 왼쪽으로
+    text_columns=["yyyymm"],
+    aggregate={"예상실적":"sum","실제실적":"sum"},
+    initial_expand_level=0,
+    # ▼ 그룹 헤더 정의: '실적' 그룹 아래 두 컬럼을 배치
+    header_groups={"실적": ["예상실적","실제실적"]},
+)
+
+with open("table_grouped_header.html", "w", encoding="utf-8") as f:
+    f.write(html)
+"""
